@@ -10,7 +10,7 @@ from time_keeper import count
 
 #####################
 def product_information(name):
-    driver = webdriver.Chrome("C:/Users/Yash/Downloads/chromedriver_win32/chromedriver")
+    driver = webdriver.PhantomJS()#Chrome("C:/Users/Yash/Downloads/chromedriver_win32/chromedriver")
     driver.maximize_window()
     driver.get("https://www.midlandsci.com/")
     sleep(2)
@@ -24,20 +24,25 @@ def product_information(name):
     sleep(1)
     url = driver.current_url
     print(url)
-    fullname = {"Ricca":"RiccaChemical", "Globe":"GlobeScientific", "Brandtech": "BrandtechScientific"}
-    driver.find_element_by_css_selector("#linkAttributeValueSupplier_{}".format(fullname[name])).click()
-    
-
+    fullname = {"Ricca":"RiccaChemical", "Globe":"GlobeScientific", "Brandtech": "BrandtechScientific", "MTC Bio":"MTCBio"}
+    try:
+        driver.find_element_by_css_selector("#linkAttributeValueSupplier_{}".format(fullname[name])).click()
+    except:
+        driver.find_element_by_css_selector("#linkAttributeValueSupplier_{}".format(name)).click()
+        
+        
     pages = driver.find_element_by_css_selector(".ItemSearchResults_SummaryMessage").text
     pages = pages.split("of")
     total = pages[-1].split(".")
     total = int(total[0])
+    #total = 5
     
     
     pt = pages[0].split("-")
     pt_st = pt[0].split(":")
     page_start, page_total = int(pt_st[1]), int(pt[1])
     sleep(1)
+    #page_total=5
     
     #driver.execute_script("window.history.go(-1)")
     #driver.execute_script("window.scrollTo(0, 450)")
@@ -50,10 +55,19 @@ def product_information(name):
     sleep(5)
     total_ids=[]
     while True:
-        for i in range(page_start-1, page_total):
+        for i in range(0, (page_total-page_start)+1):
             prd_id = driver.find_element_by_css_selector("#BaseList_TR_ResultLine_{}\ item_tr_customstyle > td:nth-child(1) > a:nth-child(2)".format(str(i))).text
             prd_desp[prd_id] = {}
-            prd_price[prd_id] = driver.find_element_by_css_selector("#BaseList_TR_ResultLine_{}\ item_tr_customstyle > td:nth-child(3) > span:nth-child(1)".format(str(i))).text
+            wait = True
+            while wait:
+                if prc != "WAIT":
+                    prd_price[prd_id]
+                    break
+                else:
+                    prc = driver.find_element_by_css_selector("#BaseList_TR_ResultLine_{}\ item_tr_customstyle > td:nth-child(3) > span:nth-child(1)".format(str(i))).text
+                
+                
+            print("Got the Price")
             img = driver.find_element_by_css_selector("#BaseList_TR_ResultLine_{}\ item_tr_customstyle > td:nth-child(1) > a:nth-child(1) > img:nth-child(1)".format(str(i)))
             prd_img[prd_id] = img.get_attribute("src")
 
@@ -68,7 +82,7 @@ def product_information(name):
 
         print(page_start, page_total, total)
         #print(prd_price)
-        for j in range(page_start-1, page_total):
+        for j in range(0,(page_total-page_start)+1):
 
             try:
                 sleep(3)
@@ -90,19 +104,24 @@ def product_information(name):
                 item_id = driver.find_element_by_css_selector("#ItemCodeRef").text 
                 prd_desp[item_id]["Name"] = driver.find_element_by_css_selector(".item_detail_title_custom > span:nth-child(1)").text
             except:
-                prd_desp[item_id]["Name"] = "None"
+                prd_desp[item_id]["Name"] = None
+                
 
             try:
-                prd_desp[item_id]["Description"] = driver.find_element_by_css_selector(".itemDescriptionCustomInformation > p:nth-child(1)").text
+                prd_desp[item_id]["Description"] = driver.find_element_by_css_selector(".itemDescriptionCustomInformation").text                
+                
             except Exception as e:
-                print("Description Error {}".format(e))
-                prd_desp[item_id]["Description"]="None"
+                try:
+                    prd_desp[item_id]["Description"] = driver.find_element_by_css_selector(".itemDescriptionCustomInformation").text
+                except:
+                    prd_desp[item_id]["Description"] = None
+
 
             try:
                 prd_desp[item_id]["Category"] = driver.find_element_by_css_selector(".BreadCrumbcategorytree_activepage").text
             except Exception as e:
                 print("Category Error {}".format(e))
-                prd_desp[item_id]["Category"] = "None"
+                prd_desp[item_id]["Category"] = None
 
  
             
@@ -143,7 +162,7 @@ def product_information(name):
                         print("Inside!")
                         
                     
-                    print(prd_mod)
+                    #print(prd_mod)
                     driver.execute_script("window.history.go(-1)")
                     sleep(2)
                 except Exception as e:
@@ -153,23 +172,34 @@ def product_information(name):
                     sleep(2)
                     
         if page_total != total:
+            html = driver.find_element_by_tag_name("html")
+            html.send_keys(Keys.END)
+            sleep(0.3)
             page_counter+=1
-            driver.find_element_by_css_selector("table.ItemsListPaginationTable:nth-child(7) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2) > a:nth-child({})".format(str(page_counter))).click()
+            try:
+                driver.find_element_by_css_selector("table.ItemsListPaginationTable:nth-child(7) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2) > a:nth-child({})".format(str(page_counter))).click()
+            except:
+                driver.execute_script("window.history.go(-1)")
+                sleep(2)
+                
+            
             sleep(1)
             pages = driver.find_element_by_css_selector(".ItemSearchResults_SummaryMessage").text
+            
             pages = pages.split("of")
             total = pages[-1].split(".")
             total = int(total[0])
             pt = pages[0].split("-")
             pt_st = pt[0].split(":")
             page_start, page_total = int(pt_st[1]), int(pt[1])
+            
             print("Moving onto next page")
             
         else:
             curr_dict = {'Manufacturer_SKU':[],'Product_Name':[],'Product_Description':[],'Product_Category':[],'Product_Subcategory1':[],'Product_Subcategory2':[],'Manufacturer':[],
                             'Brand':[],'Tags':[],'Barcode':[],'Option_1_Label':[],'Option_1_Value':[],'Option_2_Label':[],'Option_2_Value':[],'Option_3_Label':[],'Option_3_Value':[],
-                            'Modifier_1_Label':[],'Modifier_1_Value':[],'Modifier_2_Label':[],'Modifier_2_Value':[],'Modifier_3_Label':[],'Modifier_3_Value':[],'Modifier_4_Value':[],
-                            'Modifier_4_Label':[],'Modifier_5_Value':[],'Modifier_5_Label':[],'Modifier_6_Value':[],'Modifier_6_Label':[],'Variant_Name':[],'Variant_Description':[],
+                            'Modifier_1_Label':[],'Modifier_1_Value':[],'Modifier_2_Label':[],'Modifier_2_Value':[],'Modifier_3_Label':[],'Modifier_3_Value':[],'Modifier_4_Label':[],
+                            'Modifier_4_Value':[],'Modifier_5_Label':[],'Modifier_5_Value':[],'Modifier_6_Label':[],'Modifier_6_Value':[],'Variant_Name':[],'Variant_Description':[],
                             'Suggested_Manufacturer_List_Price':[],'Suggested_Manufacturer_Clearance_Price':[],'Manufacturer_Cost':[],'Distributor_Cost':[],'Distributor_Clearance_Cost':[],
                             'Discount_Purchase_Quantity':[],'Bulk_Discount_Price':[],'Taxable':[],'Publish_Online':[],'B2B_eCommerce':[],'Purchasable_on_Amazon':[],'Pack_Size_Label':[],
                             'Pack_Size_Value':[],'Weight_Unit':[],'Weight_Value':[],'Product_Dimension_Unit':[],'Product_Width':[],'Product_Height':[],'Product_Depth':[],'Fixed_Shipping_Price':[],
@@ -187,10 +217,14 @@ def product_information(name):
                     except:
                         ml = ["None"]
                         vl= ["None"]
-                    curr_dict['Manufacturer_SKU'].append(id_)
-                    curr_dict['Product_Name'].append(prd_desp[id_]["Name"])
-                    curr_dict['Product_Description'].append(prd_desp[id_]["Description"])
-                    curr_dict['Product_Category'].append(prd_desp[id_]["Category"])
+                    try:
+                        curr_dict['Manufacturer_SKU'].append(id_)
+                        curr_dict['Product_Name'].append(prd_desp[id_]["Name"])
+                        curr_dict['Product_Description'].append(prd_desp[id_]["Description"])
+                        curr_dict['Product_Category'].append(prd_desp[id_]["Category"])
+                        curr_dict['Image_Filename'].append(prd_desp[id_]["img_link"])
+                    except Exception as e:
+                        print(e)
                     curr_dict['Product_Subcategory1'].append(None)
                     curr_dict['Product_Subcategory2'].append(None)
                     curr_dict['Manufacturer'].append(name)
@@ -203,6 +237,7 @@ def product_information(name):
                     curr_dict['Option_2_Value'].append(None)
                     curr_dict['Option_3_Label'].append(None)
                     curr_dict['Option_3_Value'].append(None)
+                    
                     
                     try:
                         curr_dict['Modifier_1_Label'].append(ml[0])
@@ -286,7 +321,6 @@ def product_information(name):
                     curr_dict['Page_Title'].append(None)
                     curr_dict['Meta_Keywords'].append(None)
                     curr_dict['Meta_Description'].append(None)
-                    curr_dict['Image_Filename'].append(prd_desp[id_]["img_link"])
                     curr_dict['Variable_1_Label'].append(None)
                     curr_dict['Variable_1_Value'].append(None)
                     curr_dict['Variable_2_Label'].append(None)
@@ -301,7 +335,7 @@ def product_information(name):
                     curr_dict['Variable_6_Value'].append(None)
 
                     product_information = pd.DataFrame(curr_dict)
-                    pd.DataFrame(product_information).to_csv('CSVs/{}_FullRun.csv'.format(name))
+                    pd.DataFrame(product_information).to_csv('CSVs/SecondRun/{}_FullRun.csv'.format(name))
             except Exception as e:
                print("Dict Error {}".format(e))
             driver.quit()
